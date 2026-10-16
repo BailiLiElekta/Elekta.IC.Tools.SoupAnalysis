@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\SoupAnalysis.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\SoupAnalysis.ico" />
+    <ProjectReference Include="../Elekta.IC.Tools.SoupAnalysis.Application/Elekta.IC.Tools.SoupAnalysis.Application.csproj" />
+    <ProjectReference Include="../Elekta.IC.Tools.SoupAnalysis.Infrastructure/Elekta.IC.Tools.SoupAnalysis.Infrastructure.csproj" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <Content Include="../../config/*.json" Link="config/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

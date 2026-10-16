@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "testProjectPatterns": ["Test.*", "*.Test.Unit", "*.UnitTests"],
+  "maxConcurrency": 4
+}

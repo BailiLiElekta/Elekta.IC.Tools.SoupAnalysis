@@ -1,0 +1,31 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<DrawingImage x:Key="SoupAnalysisLogo">
+    <DrawingImage.Drawing>
+        <DrawingGroup>
+            <GeometryDrawing Brush="Transparent" Geometry="M0,0 H64 V64 H0 Z" />
+            <GeometryDrawing Brush="#96D3DC" Geometry="M8,17 L27,7 46,17 27,28 Z">
+                <GeometryDrawing.Pen><Pen Brush="#25343A" Thickness="2" LineJoin="Round" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <GeometryDrawing Brush="#1B91A6" Geometry="M8,17 L27,28 V51 L8,40 Z">
+                <GeometryDrawing.Pen><Pen Brush="#25343A" Thickness="2" LineJoin="Round" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <GeometryDrawing Brush="#146F80" Geometry="M27,28 L46,17 V40 L27,51 Z">
+                <GeometryDrawing.Pen><Pen Brush="#25343A" Thickness="2" LineJoin="Round" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <GeometryDrawing Geometry="M18,12 L37,23 V30">
+                <GeometryDrawing.Pen><Pen Brush="#E6F1F3" Thickness="3" LineJoin="Round" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <GeometryDrawing Geometry="M49,48 L59,58">
+                <GeometryDrawing.Pen><Pen Brush="#25343A" Thickness="7" StartLineCap="Round" EndLineCap="Round" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <GeometryDrawing Brush="#F3FAFB">
+                <GeometryDrawing.Geometry><EllipseGeometry Center="40,39" RadiusX="12" RadiusY="12" /></GeometryDrawing.Geometry>
+                <GeometryDrawing.Pen><Pen Brush="#25343A" Thickness="4" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <GeometryDrawing Geometry="M34,42 L39,37 42,40 46,35">
+                <GeometryDrawing.Pen><Pen Brush="#1B91A6" Thickness="3" LineJoin="Round" StartLineCap="Round" EndLineCap="Round" /></GeometryDrawing.Pen>
+            </GeometryDrawing>
+        </DrawingGroup>
+    </DrawingImage.Drawing>
+</DrawingImage>
+</ResourceDictionary>

@@ -1,0 +1,133 @@
+<UserControl x:Class="Elekta.IC.Tools.SoupAnalysis.Desktop.Views.AnalysisView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <DataTemplate x:Key="ReadonlyTarget">
+            <StackPanel VerticalAlignment="Center" ToolTip="{Binding TargetTooltip}" ToolTipService.ShowOnDisabled="True">
+                <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" ToolTip="Locked to PlatformMax">
+                    <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                        <DataTrigger Binding="{Binding SharedTag}" Value="Shared"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                    </Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding Target}" />
+                </StackPanel>
+                <TextBlock Text="{Binding TargetInfoText}" FontSize="11" LineHeight="14" LineStackingStrategy="BlockLineHeight" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
+                        <DataTrigger Binding="{Binding IsTargetUnavailable}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                    </Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="SoupTarget">
+            <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                DisplayMemberPath="Label" IsEditable="True" IsReadOnly="True" AutomationProperties.Name="SOUP target source"
+                ToolTip="{Binding TargetTooltip}" />
+        </DataTemplate>
+        <DataTemplate x:Key="CustomTarget">
+            <TextBox Text="{Binding CustomVersionText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Internal exact target version"
+                ToolTip="{Binding TargetError}">
+                <TextBox.Style><Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                    <Setter Property="BorderBrush" Value="#B42318" />
+                    <Style.Triggers><DataTrigger Binding="{Binding TargetError}" Value="{x:Null}"><Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" /></DataTrigger></Style.Triggers>
+                </Style></TextBox.Style>
+            </TextBox>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Grid Margin="0,12,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <Label Content="Repository" Target="{Binding ElementName=AnalysisRepository}" VerticalAlignment="Center" Padding="0,0,10,0" />
+            <ComboBox x:Name="AnalysisRepository" Grid.Column="1" ItemsSource="{Binding AnalysisRepositoryChoices}" SelectedItem="{Binding SelectedAnalysisRepository}" DisplayMemberPath="Label"
+                IsTextSearchEnabled="True" TextSearch.TextPath="Label" AutomationProperties.Name="Analysis repository" ToolTip="{Binding SelectedAnalysisRepository.Label}" Margin="0,0,12,0">
+                <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem"><Setter Property="ToolTip" Value="{Binding Label}" /></Style></ComboBox.ItemContainerStyle>
+            </ComboBox>
+            <Button Grid.Column="2" Content="Export Excel" Command="{Binding ExportCommand}" Style="{StaticResource PrimaryButton}" ToolTip="Full analysis snapshot and current report selections; display filters do not limit export" />
+        </Grid>
+        <StackPanel Grid.Row="1" Margin="0,0,0,8" ToolTip="{Binding GlobalBaselineBlockReasons}">
+            <TextBlock Text="{Binding AnalysisScopeTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding RepositoryAnalysisSummary}" TextWrapping="Wrap" Margin="0,3,0,0" />
+        </StackPanel>
+        <WrapPanel Grid.Row="2" Margin="0,0,0,8">
+            <TextBox Width="220" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search packages" ToolTip="Search package ID" Margin="0,0,8,4" />
+            <ComboBox Width="155" ItemsSource="{Binding OwnershipFilters}" SelectedItem="{Binding OwnershipFilter}" AutomationProperties.Name="Ownership filter" Margin="0,0,8,4" />
+            <ComboBox Width="140" ItemsSource="{Binding ActionFilters}" SelectedItem="{Binding ActionFilter}" AutomationProperties.Name="Action filter" Margin="0,0,8,4" />
+            <ComboBox Width="140" ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}" AutomationProperties.Name="Category filter" Margin="0,0,8,4" />
+        </WrapPanel>
+        <TabControl Grid.Row="3">
+            <TabItem Header="Package Comparison">
+                <DataGrid ItemsSource="{Binding PackagesView}" SelectedItem="{Binding SelectedPackage}" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Package" Binding="{Binding PackageId}" Width="210" ElementStyle="{StaticResource GridCellText}" />
+                        <DataGridTextColumn Header="Source / Ownership" Binding="{Binding SourceLabel}" Width="155" CellStyle="{StaticResource OwnershipCell}" />
+                        <DataGridTextColumn Header="TEST Only" Binding="{Binding TestOnlyStatus}" Width="120" ElementStyle="{StaticResource GridCellText}" />
+                        <DataGridTextColumn Header="Current Versions" Binding="{Binding CurrentVersions}" Width="125" ElementStyle="{StaticResource GridCellText}" />
+                        <DataGridTemplateColumn Header="Target Choice" Width="240"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                            <ContentControl Content="{Binding}" IsEnabled="{Binding DataContext.CanEdit, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" ToolTip="{Binding TargetTooltip}" ToolTipService.ShowOnDisabled="True">
+                                <ContentControl.Style><Style TargetType="ContentControl">
+                                    <Setter Property="ContentTemplate" Value="{StaticResource ReadonlyTarget}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSoupTargetEditable}" Value="True"><Setter Property="ContentTemplate" Value="{StaticResource SoupTarget}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding IsCustomTargetEditable}" Value="True"><Setter Property="ContentTemplate" Value="{StaticResource CustomTarget}" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style></ContentControl.Style>
+                            </ContentControl>
+                        </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="130" CellStyle="{StaticResource ActionCell}" />
+                        <DataGridTextColumn Header="Projects" Binding="{Binding ProjectCount}" Width="75" />
+                        <DataGridTextColumn Header="PlatformMax" Binding="{Binding PlatformMax}" Width="110" />
+                        <DataGridTextColumn Header="ICMax" Binding="{Binding ICMax}" Width="170" />
+                        <DataGridTextColumn Header="NuGetMax (Formal releases)" Binding="{Binding NuGetMax}" Width="195">
+                            <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock" BasedOn="{StaticResource GridCellText}">
+                                <Setter Property="ToolTip" Value="{Binding CandidateStatus}" /><Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+                            </Style></DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="References">
+                <Grid><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <DockPanel Margin="0,8"><ComboBox Width="170" HorizontalAlignment="Left" ItemsSource="{Binding ReferenceCategoryFilters}" SelectedItem="{Binding ReferenceCategoryFilter}" AutomationProperties.Name="Reference category" />
+                        <Button DockPanel.Dock="Right" Content="Clear Package Selection" Command="{Binding ClearDetailsCommand}" HorizontalAlignment="Right" /></DockPanel>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding ReferencesView}" IsReadOnly="True"><DataGrid.Columns>
+                        <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="110" />
+                        <DataGridTextColumn Header="Repository" Binding="{Binding Repository}" Width="275" />
+                        <DataGridTextColumn Header="Package" Binding="{Binding PackageId}" Width="235" />
+                        <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="120" />
+                        <DataGridTextColumn Header="Tags" Binding="{Binding Tags}" Width="145" />
+                        <DataGridTextColumn Header="Ref" Binding="{Binding Ref}" Width="190" />
+                        <DataGridTextColumn Header="Project" Binding="{Binding Project}" Width="300" />
+                        <DataGridTextColumn Header="Version File" Binding="{Binding File}" Width="300" />
+                        <DataGridTextColumn Header="Owner" Binding="{Binding Owner}" Width="320" />
+                        <DataGridTextColumn Header="Condition" Binding="{Binding Condition}" Width="250" />
+                    </DataGrid.Columns></DataGrid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Completeness / Issues">
+                <Grid><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <CheckBox Content="Show all scan issues" IsChecked="{Binding ShowAllScanIssues}" Margin="0,8" AutomationProperties.Name="Show all scan issues" />
+                <DataGrid Grid.Row="1" ItemsSource="{Binding IssuesView}" IsReadOnly="True"><DataGrid.Columns>
+                    <DataGridTextColumn Header="Repository" Binding="{Binding Repository}" Width="270" />
+                    <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="180" />
+                    <DataGridTextColumn Header="Issue" Binding="{Binding Message}" Width="500" />
+                    <DataGridTextColumn Header="File" Binding="{Binding File}" Width="300" />
+                    <DataGridCheckBoxColumn Header="Blocks Updates" Binding="{Binding BlocksUpdates}" Width="120" />
+                </DataGrid.Columns></DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Expander Grid.Row="4" Header="Selected Package / Local Provenance" IsExpanded="{Binding HasDetails, Mode=OneWay}" Margin="0,8,0,0">
+            <Grid MaxHeight="230"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <DockPanel Margin="0,6"><Button DockPanel.Dock="Right" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" ToolTip="Close package details" Command="{Binding ClearDetailsCommand}" Padding="6" />
+                    <StackPanel><TextBlock Text="{Binding SelectedPackage.PackageId}" FontWeight="SemiBold" /><TextBlock Text="{Binding SelectedPackage.CandidateStatus}" TextWrapping="Wrap" /></StackPanel></DockPanel>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding ReferencesView}" IsReadOnly="True"><DataGrid.Columns>
+                    <DataGridTextColumn Header="Repository" Binding="{Binding Repository}" Width="260" />
+                    <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="100" />
+                    <DataGridTextColumn Header="Tags" Binding="{Binding Tags}" Width="150" />
+                    <DataGridTextColumn Header="Project" Binding="{Binding Project}" Width="300" />
+                    <DataGridTextColumn Header="Declaration File" Binding="{Binding File}" Width="300" />
+                    <DataGridTextColumn Header="Ownership / XML Location" Binding="{Binding Owner}" Width="360" />
+                </DataGrid.Columns></DataGrid>
+            </Grid>
+        </Expander>
+    </Grid>
+</UserControl>

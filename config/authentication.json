@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "",
+  "clientId": "",
+  "redirectUri": "",
+  "scopes": ["https://app.vssps.visualstudio.com/.default"]
+}

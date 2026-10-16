@@ -1,0 +1,45 @@
+<UserControl x:Class="Elekta.IC.Tools.SoupAnalysis.Desktop.Views.ChangeReviewView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="0,12,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,8"><StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="{Binding ReviewButtonLabel}" Command="{Binding ReviewCommand}" ToolTip="{Binding GlobalBaselineBlockReasons}" />
+                <Button Content="Execute Approved Plan" Command="{Binding ExecuteCommand}" Style="{StaticResource PrimaryButton}" />
+            </StackPanel><TextBlock Text="{Binding ReviewStatus}" TextWrapping="Wrap" /></DockPanel>
+        <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+            <Label Content="Repository" Target="{Binding ElementName=ChangeRepositorySelector}" VerticalAlignment="Center" />
+            <ComboBox x:Name="ChangeRepositorySelector" ItemsSource="{Binding RepositoryChoices}" DisplayMemberPath="Name"
+                SelectedItem="{Binding SelectedChangeRepository, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                IsEnabled="{Binding CanEdit}" Width="420" MaxWidth="480" Margin="0,0,14,0" AutomationProperties.Name="Changes repository" />
+            <Button Content="Select Upgrades" Command="{Binding SelectUpgradesCommand}" />
+            <Button Content="Select All" Command="{Binding SelectAllPackagesCommand}" />
+            <Button Content="Clear Selection" Command="{Binding ClearPackageSelectionCommand}" />
+        </WrapPanel>
+        <TextBlock Grid.Row="2" Text="{Binding ChangeRepositorySummary}" TextWrapping="Wrap" Margin="0,0,0,8" />
+        <TextBlock Grid.Row="3" Text="{Binding ChangeTableTitle}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6" />
+        <DataGrid Grid.Row="4" ItemsSource="{Binding VisibleReviewRows}" IsReadOnly="True"><DataGrid.Columns>
+            <DataGridTemplateColumn Header="Select" Width="60"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                <Grid IsEnabled="{Binding DataContext.CanSelectChangePackages, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                    <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Eligible}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="Select repository package" />
+                </Grid>
+            </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+            <DataGridTextColumn Header="Repository" Binding="{Binding RepositoryName}" Width="270" />
+            <DataGridTextColumn Header="Package" Binding="{Binding PackageId}" Width="235" />
+            <DataGridTextColumn Header="Old Versions" Binding="{Binding OldVersion}" Width="140" />
+            <DataGridTextColumn Header="New Version" Binding="{Binding NewVersion}" Width="155" />
+            <DataGridTextColumn Header="Target Source" Binding="{Binding Package.SelectedTarget.Source}" Width="130" />
+            <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="130" CellStyle="{StaticResource ActionCell}" />
+            <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="300" />
+            <DataGridTextColumn Header="Affected Files" Binding="{Binding Files}" Width="400" />
+        </DataGrid.Columns></DataGrid>
+        <TextBlock Grid.Row="5" Text="{Binding ChangeResultSummary}" Margin="0,10,0,6" TextWrapping="Wrap" />
+        <DataGrid Grid.Row="6" ItemsSource="{Binding VisibleResults}" IsReadOnly="True" MaxHeight="180" MinHeight="65"><DataGrid.Columns>
+            <DataGridTextColumn Header="Repository ID" Binding="{Binding RepositoryId}" Width="270" />
+            <DataGridTextColumn Header="Outcome" Binding="{Binding Status}" Width="125" />
+            <DataGridTextColumn Header="Branch" Binding="{Binding Branch}" Width="220" />
+            <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="400" />
+            <DataGridTemplateColumn Header="Pull Request" Width="450"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                <Button Content="{Binding PullRequestUrl}" CommandParameter="{Binding}" Command="{Binding DataContext.OpenPullRequestCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" HorizontalContentAlignment="Left" ToolTip="Open validated HTTPS pull request URL" Padding="4" />
+            </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+        </DataGrid.Columns></DataGrid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,52 @@
+<UserControl x:Class="Elekta.IC.Tools.SoupAnalysis.Desktop.Views.RepositoriesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <CollectionViewSource x:Key="GroupedRepositories" Source="{Binding Repositories}">
+            <CollectionViewSource.GroupDescriptions><PropertyGroupDescription PropertyName="Category" /></CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+    </UserControl.Resources>
+    <Grid Margin="0,12,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,10">
+            <Button DockPanel.Dock="Right" Content="Save Settings" Command="{Binding SaveSettingsCommand}" />
+            <TextBlock Text="Repository Sources" FontWeight="SemiBold" FontSize="16" />
+        </DockPanel>
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Source={StaticResource GroupedRepositories}}" IsReadOnly="True">
+            <DataGrid.GroupStyle><GroupStyle><GroupStyle.HeaderTemplate><DataTemplate>
+                <Border Background="{StaticResource HeaderBrush}" Padding="8,6"><TextBlock Text="{Binding Name}" FontWeight="SemiBold" /></Border>
+            </DataTemplate></GroupStyle.HeaderTemplate></GroupStyle></DataGrid.GroupStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Repository" Binding="{Binding Name}" Width="280" ElementStyle="{StaticResource GridCellText}" />
+                <DataGridTextColumn Header="URL" Binding="{Binding Url}" Width="360" ElementStyle="{StaticResource GridCellText}" />
+                <DataGridTemplateColumn Header="Ref Type" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                    <ComboBox ItemsSource="{Binding AllowedRefKinds}" SelectedItem="{Binding RefKind, UpdateSourceTrigger=PropertyChanged}"
+                        IsEnabled="{Binding DataContext.CanEdit, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Branch / Tag / Commit" Width="205"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                    <TextBox Text="{Binding Ref, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding DataContext.CanEdit, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                <DataGridTextColumn Header="Validation" Binding="{Binding Validation}" Width="155" />
+                <DataGridTextColumn Header="Scan Status" Binding="{Binding ScanStatus}" Width="260" />
+                <DataGridTemplateColumn Header="Membership" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+                    <Grid><TextBlock Text="Manifest" HorizontalAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+                        <DataTrigger Binding="{Binding CanDelete}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                    </Style.Triggers></Style></TextBlock.Style></TextBlock>
+                    <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" ToolTip="Remove repository" CommandParameter="{Binding}"
+                        Command="{Binding DataContext.RemoveRepositoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" Visibility="{Binding CanDelete, Converter={StaticResource BoolVisibility}}" Padding="5" Margin="0" />
+                    </Grid>
+                </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Border Grid.Row="2" Background="{StaticResource WorkBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <TextBlock Text="Add IC / Emulator Repository" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <Grid Grid.Row="1" IsEnabled="{Binding CanEdit}"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /><ColumnDefinition Width="145" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding NewRepositoryUrl, UpdateSourceTrigger=PropertyChanged}" ToolTip="Azure repository HTTPS URL" AutomationProperties.Name="Repository URL" Margin="0,0,8,0" />
+                    <TextBox Grid.Column="1" Text="{Binding NewRepositoryBranch, UpdateSourceTrigger=PropertyChanged}" ToolTip="IC branch" AutomationProperties.Name="Branch" Margin="0,0,8,0" />
+                    <ComboBox Grid.Column="2" ItemsSource="{Binding AddCategories}" SelectedItem="{Binding NewRepositoryCategory}" ToolTip="Explicit category for unknown names" AutomationProperties.Name="Unknown repository category" Margin="0,0,8,0" />
+                    <Button Grid.Column="3" Content="Add Repository" Command="{Binding AddRepositoryCommand}" Style="{StaticResource PrimaryButton}" Margin="0" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="{Binding NewRepositoryValidation}" TextWrapping="Wrap" Margin="0,6,0,0" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

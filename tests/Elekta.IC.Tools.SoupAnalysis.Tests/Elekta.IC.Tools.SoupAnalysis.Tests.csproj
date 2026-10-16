@@ -1,0 +1,16 @@
+<Project Sdk="MSTest.Sdk/4.5.1">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <TestingExtensionsProfile>Default</TestingExtensionsProfile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
+    <ProjectReference Include="../../src/Elekta.IC.Tools.SoupAnalysis.Domain/Elekta.IC.Tools.SoupAnalysis.Domain.csproj" />
+    <ProjectReference Include="../../src/Elekta.IC.Tools.SoupAnalysis.Application/Elekta.IC.Tools.SoupAnalysis.Application.csproj" />
+    <ProjectReference Include="../../src/Elekta.IC.Tools.SoupAnalysis.Infrastructure/Elekta.IC.Tools.SoupAnalysis.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Elekta.IC.Tools.SoupAnalysis.Desktop/Elekta.IC.Tools.SoupAnalysis.Desktop.csproj" />
+    <None Include="../../config/*.json" Link="config/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

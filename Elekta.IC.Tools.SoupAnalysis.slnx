@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Elekta.IC.Tools.SoupAnalysis.Domain/Elekta.IC.Tools.SoupAnalysis.Domain.csproj" />
+    <Project Path="src/Elekta.IC.Tools.SoupAnalysis.Application/Elekta.IC.Tools.SoupAnalysis.Application.csproj" />
+    <Project Path="src/Elekta.IC.Tools.SoupAnalysis.Infrastructure/Elekta.IC.Tools.SoupAnalysis.Infrastructure.csproj" />
+    <Project Path="src/Elekta.IC.Tools.SoupAnalysis.Desktop/Elekta.IC.Tools.SoupAnalysis.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Elekta.IC.Tools.SoupAnalysis.Tests/Elekta.IC.Tools.SoupAnalysis.Tests.csproj" />
+  </Folder>
+</Solution>
