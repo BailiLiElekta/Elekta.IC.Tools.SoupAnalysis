@@ -10,6 +10,75 @@ namespace Elekta.IC.Tools.SoupAnalysis.Tests;
 public sealed class ExcelReportTests
 {
     [TestMethod]
+    [DataRow(RefKind.Tag, "29.5.0")]
+    [DataRow(RefKind.Branch, "main")]
+    public async Task ProducerTargetsFlowThroughGuiReviewIssuesAndExport(RefKind kind, string reference)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".xlsx");
+        try
+        {
+            await OnDispatcherAsync(async () =>
+            {
+                var producer = TestData.Repo("elekta.platform.identity", RepositoryCategory.Platform)
+                    with { RefKind = kind, Ref = reference };
+                var ic = TestData.Repo("ic");
+                var emulator = TestData.Repo("emulator", RepositoryCategory.ICEmulator);
+                const string packageId = "Elekta.Platform.Identity.HealthChecks";
+                var manifest = new PlatformManifest(1, "3", [producer])
+                {
+                    PackageMappings = [new(producer.Id, ["Elekta.Platform.Identity"])]
+                };
+                var analysis = AlignmentAnalyzer.Analyze(Guid.NewGuid(), manifest, "hash", [producer, ic, emulator],
+                    [TestData.Inventory(producer), TestData.Inventory(ic, TestData.Usage(ic, packageId, "28.0")),
+                        TestData.Inventory(emulator, TestData.Usage(emulator, packageId, "30.0"))], DateTimeOffset.UtcNow);
+                var ports = new GuiPorts(analysis, path, manifest);
+                using var model = new Elekta.IC.Tools.SoupAnalysis.Desktop.ViewModels.MainViewModel(ports, ports, ports,
+                    new ScanWorkflow(ports, ports, ports), new ExportReportWorkflow(ports), new UpdateWorkflow(ports), ports);
+                await model.InitializeCommand.ExecuteAsync(null);
+                await model.SetAnalysisAsync(analysis);
+                Assert.IsNull(model.UserError);
+                var row = model.Packages.Single();
+                Assert.AreEqual("Platform package", row.SourceLabel);
+                Assert.AreEqual(kind == RefKind.Tag ? "Upgrade" : "Unresolved", row.Action);
+                var review = model.ReviewRows.Single();
+                Assert.AreEqual(kind == RefKind.Tag, review.Eligible);
+                if (kind == RefKind.Tag)
+                {
+                    review.IsSelected = true;
+                    await model.ReviewCommand.ExecuteAsync(null);
+                    Assert.IsNull(model.UserError);
+                    Assert.IsTrue(model.CanExecute);
+                    Assert.AreEqual(TargetSource.PlatformTag, ports.ReviewedPlan!.Changes.Single().TargetSource);
+                }
+                else
+                {
+                    Assert.IsTrue(model.Issues.Any(issue => issue.Code == "PlatformTagUnresolved"
+                        && issue.RepositoryId == ic.Id && issue.Message.Contains(reference)));
+                }
+                model.SelectedAnalysisRepository = model.AnalysisRepositoryChoices.Single(choice => choice.Id == emulator.Id);
+                Assert.AreEqual(kind == RefKind.Tag ? "Downgrade" : "Unresolved", row.Action);
+                Assert.IsFalse(row.IsTargetEditable);
+                await model.ExportCommand.ExecuteAsync(null);
+                Assert.IsNull(model.UserError);
+                using var workbook = new XLWorkbook(path);
+                foreach (var sheetName in new[] { "IC Alignment", "IC Emulator" })
+                {
+                    var sheet = workbook.Worksheet(sheetName);
+                    Assert.AreEqual(producer.Name, Value(sheet, 2, "Platform Producer"));
+                    Assert.AreEqual(reference, Value(sheet, 2, "Producer Ref"));
+                    Assert.AreEqual(kind == RefKind.Tag ? "29.5.0" : "", Value(sheet, 2, "Selected Target"));
+                    if (kind != RefKind.Tag)
+                    {
+                        Assert.AreEqual("Unresolved", Value(sheet, 2, "Action"));
+                        StringAssert.Contains(Value(sheet, 2, "Platform Target Issue"), reference);
+                    }
+                }
+            });
+        }
+        finally { File.Delete(path); }
+    }
+
+    [TestMethod]
     public async Task PreviewWorkbookRetainsDraftTargetsNotApprovedStatusAndSnapshotProvenance()
     {
         var platform = TestData.Repo("platform", RepositoryCategory.Platform);
@@ -182,17 +251,17 @@ public sealed class ExcelReportTests
         return completion.Task;
     }
 
-    private sealed class GuiPorts(AnalysisResult analysis, string path) : IConfigurationService, ISettingsStore, IAccessTokenProvider,
+    private sealed class GuiPorts(AnalysisResult analysis, string path, PlatformManifest? manifest = null) : IConfigurationService, ISettingsStore, IAccessTokenProvider,
         IRepositorySnapshotProvider, IPackageScanner, INuGetCandidateProvider, IUpdateExecutor, IExcelReportWriter,
         Elekta.IC.Tools.SoupAnalysis.Desktop.Presentation.IUserInteraction
     {
         public ReportSelection? ExportedSelection { get; private set; }
         public ChangePlan? ReviewedPlan { get; private set; }
         public Task<LoadedConfiguration> LoadAsync(CancellationToken cancellationToken) => Task.FromResult(new LoadedConfiguration(
-            new(1, analysis.ManifestVersion, [.. analysis.OriginalRefs.Where(source => source.Category == RepositoryCategory.Platform)]),
+            manifest ?? new(1, analysis.ManifestVersion, [.. analysis.OriginalRefs.Where(source => source.Category == RepositoryCategory.Platform)]),
             analysis.ManifestHash, AnalysisRules.Default, new(1, "", "", "", ["scope"])));
         Task<UserSettings> ISettingsStore.LoadAsync(CancellationToken cancellationToken) => Task.FromResult(UserSettings.Default with
-            { Repositories = [.. analysis.OriginalRefs.Where(source => source.Category == RepositoryCategory.IC)] });
+            { Repositories = [.. analysis.OriginalRefs.Where(source => source.Category != RepositoryCategory.Platform)] });
         public Task SaveAsync(UserSettings settings, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<AccessToken> GetTokenAsync(bool allowInteractive, CancellationToken cancellationToken) => throw new AssertFailedException("No login expected.");
         public Task SignOutAsync(CancellationToken cancellationToken) => Task.CompletedTask;

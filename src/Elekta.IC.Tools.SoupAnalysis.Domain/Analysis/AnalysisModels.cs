@@ -32,6 +32,8 @@ public sealed record RepositoryPackageDecision(
     string RepositoryId, string PackageId, bool TestOnly,
     ImmutableArray<PackageUsage> Usages, AlignmentAction Action);
 
+public sealed record PlatformPackageBaseline(RepositorySource Source, NuGetVersion? Version, string? UnavailableReason);
+
 public sealed record PackageDecision(
     string PackageId, PackageOwnership Ownership,
     NuGetVersion? PlatformMax, NuGetVersion? ICMax, NuGetCandidate? NuGetCandidate,
@@ -39,6 +41,10 @@ public sealed record PackageDecision(
     ImmutableArray<RepositoryPackageDecision> Repositories)
 {
     public bool IsSoup => Ownership == PackageOwnership.Soup;
+    public PlatformPackageBaseline? PlatformPackage { get; init; }
+    public TargetSource PlatformTargetSource => PlatformPackage is null ? TargetSource.PlatformMax : TargetSource.PlatformTag;
+    public NuGetVersion? PlatformTarget => PlatformPackage is null ? PlatformMax : PlatformPackage.Version;
+    public bool IsPlatformTargetComplete => IsPlatformMaxComplete && PlatformTarget is not null;
 }
 
 public sealed record AnalysisResult(

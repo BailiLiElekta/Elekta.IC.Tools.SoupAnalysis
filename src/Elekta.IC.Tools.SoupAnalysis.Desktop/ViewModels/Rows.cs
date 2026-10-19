@@ -64,8 +64,8 @@ public sealed class PackageRow : ObservableObject
         this.repositoryCompleteness = repositoryCompleteness;
         this.baselineBlockReasons = baselineBlockReasons;
         var choices = new List<TargetChoice>();
-        if (decision.Ownership == PackageOwnership.SharedWithPlatform && decision.IsPlatformMaxComplete && decision.PlatformMax is { } platform)
-            choices.Add(new(TargetSource.PlatformMax, platform));
+        if (decision.Ownership == PackageOwnership.SharedWithPlatform && decision.IsPlatformTargetComplete && decision.PlatformTarget is { } platform)
+            choices.Add(new(decision.PlatformTargetSource, platform));
         if (decision.IsSoup && decision.ICMax is { } current)
             choices.Add(new(TargetSource.ICMax, current, !decision.IsICMaxComplete));
         if (decision.IsSoup && decision.NuGetCandidate is { IsAvailable: true, Version: { IsPrerelease: false } candidate })
@@ -78,7 +78,7 @@ public sealed class PackageRow : ObservableObject
     public string Ownership => Decision.Ownership == PackageOwnership.Soup ? "IC SOUP" : Decision.Ownership.ToString();
     public string SourceLabel => Decision.Ownership switch
     {
-        PackageOwnership.SharedWithPlatform => "Platform shared",
+        PackageOwnership.SharedWithPlatform => Decision.PlatformPackage is null ? "Platform shared" : "Platform package",
         PackageOwnership.Soup => "IC SOUP",
         PackageOwnership.Internal => "Internal",
         _ => "Unconfirmed"
@@ -115,7 +115,7 @@ public sealed class PackageRow : ObservableObject
             if (value is not null && !(Decision.Ownership == PackageOwnership.Internal && value.Source == TargetSource.Custom) && !Choices.Contains(value))
                 throw new ArgumentException("Target is not eligible.");
             if (Decision.Ownership == PackageOwnership.SharedWithPlatform && value != Choices.SingleOrDefault())
-                throw new InvalidOperationException("Shared target is fixed to PlatformMax.");
+                throw new InvalidOperationException($"Platform target is fixed to {Decision.PlatformTargetSource}.");
             if (SetProperty(ref selectedTarget, value))
             {
                 OnPropertyChanged(nameof(Target));
@@ -143,7 +143,7 @@ public sealed class PackageRow : ObservableObject
         || Decision.IsSoup && Choices.Count == 0;
     public string TargetAvailability => IsTargetUnavailable ? "Unavailable" : !IsEditableScope ? "Read-only"
         : SelectedTarget?.IsProvisional == true ? "Preview only; IC baseline incomplete"
-        : Decision.Ownership == PackageOwnership.SharedWithPlatform ? "Locked to PlatformMax"
+        : Decision.Ownership == PackageOwnership.SharedWithPlatform ? $"Locked to {Decision.PlatformTargetSource}"
         : Decision.Ownership == PackageOwnership.Internal ? "Manual optional" : "Available";
     private string NuGetUnavailableReason => Decision.NuGetCandidate switch
     {
@@ -156,7 +156,7 @@ public sealed class PackageRow : ObservableObject
     };
     public string TargetInfoText => SelectedTarget?.IsProvisional == true ? "Preview only; IC baseline incomplete"
         : !IsTargetUnavailable ? "" : Decision.Ownership == PackageOwnership.Unconfirmed ? "Ownership unconfirmed"
-        : Decision.Ownership == PackageOwnership.SharedWithPlatform ? "Platform baseline incomplete"
+        : Decision.Ownership == PackageOwnership.SharedWithPlatform ? Decision.PlatformPackage?.UnavailableReason ?? "Platform baseline incomplete"
         : string.Join("; ", new[] { !Decision.IsICMaxComplete ? "IC baseline incomplete" : "ICMax unknown", NuGetUnavailableReason });
     public string TargetUnavailableReason => !IsTargetUnavailable ? "" : string.Join(". ", new[]
     {
@@ -166,7 +166,8 @@ public sealed class PackageRow : ObservableObject
     }.Where(text => !string.IsNullOrWhiteSpace(text)));
     public string TargetTooltip => IsTargetUnavailable ? TargetUnavailableReason
         : SelectedTarget?.IsProvisional == true ? $"{SelectedTarget.Label}. Approval and execution require a complete new scan. {baselineBlockReasons}"
-        : Decision.Ownership == PackageOwnership.SharedWithPlatform ? $"Locked to PlatformMax; {SelectedTarget?.Label}"
+        : Decision.Ownership == PackageOwnership.SharedWithPlatform ? $"Locked to {Decision.PlatformTargetSource}; {SelectedTarget?.Label}" +
+            (Decision.PlatformPackage is { } producer ? $"; {producer.Source.Name} ({producer.Source.RefKind}: {producer.Source.Ref})" : "")
         : !IsEditableScope ? $"{scopedRepository?.Category} scope is read-only"
         : Decision.Ownership == PackageOwnership.Internal ? "Manual optional; enter an exact version"
         : SelectedTarget?.Label ?? "Choose ICMax (provisional is preview only) or NuGetMax (formal releases)";
@@ -196,7 +197,8 @@ public sealed class PackageRow : ObservableObject
     {
         get
         {
-            if (scopedRepository is not null && scopedRepository.Category != RepositoryCategory.IC) return "NotApplicable";
+            if (scopedRepository is not null && (scopedRepository.Category == RepositoryCategory.Platform
+                || scopedRepository.Category == RepositoryCategory.ICEmulator && Decision.PlatformPackage is null)) return "NotApplicable";
             if (scopedRepository is not null && !scopeComplete) return "Unresolved";
             if (TargetError is not null) return "Unresolved";
             if (Decision.Ownership == PackageOwnership.Internal && selectedTarget is null) return "NotApplicable";
@@ -313,7 +315,7 @@ public sealed class ReviewRow : ObservableObject
     public bool Eligible => PreviewEligible;
     private bool HasValidTarget =>
         (Package.Decision.Ownership == PackageOwnership.Internal ? Package.IsCustomTargetValid
-            : Package.Decision.Ownership == PackageOwnership.SharedWithPlatform ? Package.SelectedTarget?.Source == TargetSource.PlatformMax
+            : Package.Decision.Ownership == PackageOwnership.SharedWithPlatform ? Package.SelectedTarget?.Source == Package.Decision.PlatformTargetSource
             : Package.Decision.IsSoup && Package.SelectedTarget is { Source: TargetSource.ICMax or TargetSource.NuGetCandidate } target && Package.Choices.Contains(target));
 }
 

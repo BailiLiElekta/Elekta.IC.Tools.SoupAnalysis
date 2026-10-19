@@ -297,7 +297,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                         package.Decision.NuGetCandidate!.Status == CandidateStatus.Failed ? "NuGetCandidateFailed" : package.Decision.NuGetCandidate.Status == CandidateStatus.NotFound ? "NuGetCandidateNotFound" : "NoFormalNuGetCandidate",
                         $"{package.PackageId}: {package.CandidateStatus}", null, false, source.Id)));
             var issueRows = result.Inventories.SelectMany(inventory => inventory.Issues.Select(issue => new IssueRow(inventory.Source.Name, issue.Code, issue.Message, issue.SourceFile, issue.BlocksUpdates, inventory.Source.Id)))
-                .Concat(metadataIssues).ToArray();
+                .Concat(metadataIssues)
+                .Concat(result.Packages.Where(package => package.PlatformPackage?.UnavailableReason is not null)
+                    .SelectMany(package => package.Repositories.SelectMany(repository => repository.Usages)
+                        .Select(usage => usage.Repository).Where(source => source.Category != RepositoryCategory.Platform)
+                        .DistinctBy(source => source.Id, StringComparer.OrdinalIgnoreCase)
+                        .Select(source => new IssueRow(source.Name, "PlatformTagUnresolved",
+                            $"{package.PackageId}: {package.PlatformPackage!.UnavailableReason}", null, true, source.Id))))
+                .ToArray();
             return (packageRows, referenceRows, choices, reviews, issueRows);
         }, token);
         token.ThrowIfCancellationRequested();

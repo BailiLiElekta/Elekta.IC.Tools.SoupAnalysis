@@ -133,12 +133,12 @@ public sealed class ConfigurationTests
     public void DistributedConfigurationContainsExactApprovedSourcesAndNoSecrets()
     {
         var manifest = Read<PlatformManifest>("platform-repositories.json");
-        Assert.AreEqual("2", manifest.Version);
+        Assert.AreEqual("3", manifest.Version);
         Assert.AreEqual("IC Berlin Release", manifest.AnalysisFor);
         var rules = Read<AnalysisRules>("analysis-rules.json");
         var auth = Read<AuthenticationConfiguration>("authentication.json");
         var request = ConfigurationPolicy.CreateScanRequest(new(manifest, "hash", rules, auth), UserSettings.Default);
-        Assert.HasCount(11, request.Sources);
+        Assert.HasCount(8, request.Sources);
         Assert.IsFalse(auth.IsConfigured);
         Assert.AreEqual("", auth.TenantId);
         Assert.AreEqual("", auth.ClientId);
@@ -146,13 +146,10 @@ public sealed class ConfigurationTests
         CollectionAssert.AreEqual(new[] { "https://app.vssps.visualstudio.com/.default" }, auth.Scopes.ToArray());
         var expected = new[]
         {
-            ("elekta.platform.iam", RefKind.Tag, "33.6.9"),
-            ("elekta.platform.mongodb", RefKind.Tag, "hedgehog"),
-            ("elekta.platform.minio", RefKind.Tag, "1.14.0"),
-            ("elekta.platform.logging", RefKind.Tag, "6.2.0"),
-            ("elekta.platform.logging.switcher", RefKind.Branch, "main"),
+            ("elekta.platform.iam", RefKind.Tag, "33.7.0"),
+            ("elekta.platform.minio", RefKind.Tag, "1.15.0"),
             ("elekta.platform.dicom.common", RefKind.Tag, "v3.0.0"),
-            ("elekta.platform.dicom.repository", RefKind.Branch, "release/20.3.x"),
+            ("elekta.platform.dicom.repository", RefKind.Tag, "20.4.0"),
             ("elekta.platform.system-information", RefKind.Tag, "3.4.0"),
             ("elekta.platform.utility.polly", RefKind.Branch, "main"),
             ("elekta.platform.identity", RefKind.Tag, "29.5.0"),
@@ -167,6 +164,12 @@ public sealed class ConfigurationTests
             Assert.AreEqual($"https://elektasoftwarefactory.visualstudio.com/platform/_git/{name}", source.Url);
         }
         CollectionAssert.AreEqual(new[] { "Test.*", "*.Test.Unit", "*.UnitTests" }, rules.TestProjectPatterns.ToArray());
+        Assert.HasCount(expected.Length, manifest.PackageMappings);
+        Assert.AreEqual("elekta.platform.identity", manifest.FindPackageRepositoryId("Elekta.Platform.Identity.Authentication"));
+        Assert.AreEqual("elekta.platform.identity", manifest.FindPackageRepositoryId("Elekta.Platform.Identity.HealthChecks"));
+        foreach (var mapping in manifest.PackageMappings)
+            foreach (var prefix in mapping.PackagePrefixes)
+                Assert.AreEqual(mapping.RepositoryId, manifest.FindPackageRepositoryId(prefix + ".Client"));
     }
 
     [TestMethod]

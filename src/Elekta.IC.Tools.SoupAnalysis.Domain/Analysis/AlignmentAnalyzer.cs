@@ -20,9 +20,10 @@ public static class AlignmentAnalyzer
             && platformSources.All(source => IsComplete(source, inventories));
         var completeIC = sources.Where(source => source.Category == RepositoryCategory.IC)
             .All(source => IsComplete(source, inventories));
-        var included = inventories.Where(inventory => sources.Contains(inventory.Source)
-            && inventory.Source.Category != RepositoryCategory.ICEmulator);
+        var included = inventories.Where(inventory => sources.Contains(inventory.Source));
         var packages = included.SelectMany(inventory => inventory.Usages)
+            .Where(usage => usage.Repository.Category != RepositoryCategory.ICEmulator
+                || manifest.FindPackageRepositoryId(usage.PackageId) is not null)
             .Select(usage =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -30,7 +31,9 @@ public static class AlignmentAnalyzer
             })
             .GroupBy(usage => usage.PackageId, StringComparer.OrdinalIgnoreCase)
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(group => Decide(group.Key, [.. group], completePlatform, completeIC, cancellationToken)).ToImmutableArray();
+            .Select(group => Decide(group.Key, [.. group], completePlatform, completeIC,
+                platformSources.SingleOrDefault(source => source.Id.Equals(
+                    manifest.FindPackageRepositoryId(group.Key), StringComparison.OrdinalIgnoreCase)), cancellationToken)).ToImmutableArray();
         cancellationToken.ThrowIfCancellationRequested();
         return new(analysisId, scannedAt, manifest.Version, manifestHash, sources, inventories,
             packages, completePlatform, completeIC);
@@ -55,22 +58,30 @@ public static class AlignmentAnalyzer
     }
 
     private static PackageDecision Decide(string packageId, ImmutableArray<PackageUsage> usages,
-        bool completePlatform, bool completeIC, CancellationToken cancellationToken)
+        bool completePlatform, bool completeIC, RepositorySource? producer, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var platform = usages.Where(usage => usage.Repository.Category == RepositoryCategory.Platform).ToArray();
         var normalIC = usages.Where(usage => usage.Repository.Category == RepositoryCategory.IC).ToArray();
         var platformMax = Maximum(platform, cancellationToken);
-        var ownership = platform.Length > 0 ? PackageOwnership.SharedWithPlatform
+        PlatformPackageBaseline? baseline = null;
+        if (producer is not null)
+        {
+            var tag = producer.Ref.StartsWith('v') || producer.Ref.StartsWith('V') ? producer.Ref[1..] : producer.Ref;
+            var version = producer.RefKind == RefKind.Tag ? PackageVersions.ParseExact(tag) : null;
+            baseline = new(producer, version, version is not null ? null
+                : $"{producer.Name}: {producer.RefKind} '{producer.Ref}' does not provide an exact NuGet version tag.");
+        }
+        var ownership = producer is not null || platform.Length > 0 ? PackageOwnership.SharedWithPlatform
             : !completePlatform ? PackageOwnership.Unconfirmed
             : packageId.StartsWith("elekta.", StringComparison.OrdinalIgnoreCase)
                 ? PackageOwnership.Internal : PackageOwnership.Soup;
         var repositories = usages.GroupBy(usage => usage.Repository.Id, StringComparer.OrdinalIgnoreCase)
             .Select(group => new RepositoryPackageDecision(group.Key, packageId,
                 group.All(usage => usage.TestClassification == TestClassification.Test), [.. group],
-                DecideAction([.. group], ownership, platformMax, completePlatform))).ToImmutableArray();
+                DecideAction([.. group], ownership, baseline is null ? platformMax : baseline.Version, completePlatform))).ToImmutableArray();
         return new(packageId, ownership, platformMax, Maximum(normalIC, cancellationToken), null,
-            completePlatform, completeIC, repositories);
+            completePlatform, completeIC, repositories) { PlatformPackage = baseline };
     }
 
     private static NuGetVersion? Maximum(IEnumerable<PackageUsage> usages, CancellationToken cancellationToken)

@@ -294,8 +294,9 @@ internal static class NativeCapture
         var grid = Descendants<DataGrid>(view).Single(table => table.Columns.Any(column => Equals(column.Header, "Target Choice")));
         Check(analysis.CompletePlatform && !analysis.CompleteIC && inventories.Single(inventory => inventory.Source.Id == local.Id).IsComplete,
             "Offline availability fixture has complete local inventory and Platform but incomplete global IC authority");
-        Check(analysis.OriginalRefs.Length == 14 && model.CanSelectChangePackages && !model.CanReview && !model.CanExecute && !analysis.CanUpdate,
-            "14-source offline fixture permits local selection while smoke and incomplete baseline retain approval/execution guards");
+        Check(analysis.OriginalRefs.SequenceEqual(original.OriginalRefs) && model.CanSelectChangePackages
+            && !model.CanReview && !model.CanExecute && !analysis.CanUpdate,
+            "Offline fixture preserves source identities and local selection while smoke and incomplete baseline retain approval/execution guards");
         Check(model.GlobalBaselineBlockReasons.Contains(failed.Name, StringComparison.Ordinal) &&
             !model.GlobalBaselineBlockReasons.Contains("elekta.ic.emulator", StringComparison.Ordinal), "Header tooltip names failed normal IC sources but excludes Emulator blockers");
         foreach (var row in model.PackagesView.Cast<PackageRow>().Where(package => package.Decision.IsSoup).ToArray())

@@ -13,7 +13,8 @@ public sealed class ExcelReportWriter : IExcelReportWriter
         "Selected Target", "Target Source", "Approval Status", "Action", "ICMax Action", "NuGet Action",
         "Project", "Assembly", "Condition", "Reference File", "Reference Locator", "Version File", "Version Locator",
         "Declaration Kind", "Property", "Central File", "Unique Owner", "Ref Kind", "Ref", "Commit", "Snapshot At",
-        "Scan At", "Analysis ID", "Manifest Version", "Manifest Hash", "Inventory Status"];
+        "Scan At", "Analysis ID", "Manifest Version", "Manifest Hash", "Inventory Status",
+        "Platform Producer", "Producer Ref Kind", "Producer Ref", "Platform Tag Version", "Platform Target Issue"];
 
     public Task WriteAsync(AnalysisResult analysis, string outputPath, IProgress<OperationProgress>? progress,
         CancellationToken cancellationToken) => WriteCoreAsync(analysis, null, outputPath, progress, cancellationToken);
@@ -92,12 +93,14 @@ public sealed class ExcelReportWriter : IExcelReportWriter
                         .Select(item => item.Version).OfType<NuGetVersion>().Distinct(VersionComparer.VersionRelease).Count() > 1;
                     var isMaximum = category == RepositoryCategory.Platform && distinctPlatform && usage.Version is { } version
                         && decision?.PlatformMax is { } maximum && PackageVersions.Equal(version, maximum);
-                    var target = selectedTarget is not null && decision is not null ? selection!.ResolveTarget(decision) : (category == RepositoryCategory.IC && decision?.Ownership == PackageOwnership.SharedWithPlatform
-                        && decision.IsPlatformMaxComplete ? decision.PlatformMax : null);
-                    var action = category == RepositoryCategory.IC
+                    var compare = category == RepositoryCategory.IC
+                        || category == RepositoryCategory.ICEmulator && decision?.PlatformPackage is not null;
+                    var target = selectedTarget is not null && decision is not null ? selection!.ResolveTarget(decision) : (compare && decision?.Ownership == PackageOwnership.SharedWithPlatform
+                        && decision.IsPlatformTargetComplete ? decision.PlatformTarget : null);
+                    var action = compare
                         ? target is not null ? AlignmentAnalyzer.GetAction(usage, target)
                             : decision?.Ownership == PackageOwnership.Soup ? AlignmentAction.AwaitingSelection
-                            : decision?.Ownership == PackageOwnership.Unconfirmed ? AlignmentAction.Unresolved : AlignmentAction.NotApplicable
+                            : decision?.Ownership is PackageOwnership.Unconfirmed or PackageOwnership.SharedWithPlatform ? AlignmentAction.Unresolved : AlignmentAction.NotApplicable
                         : AlignmentAction.NotApplicable;
                     var provenance = usage.Declaration;
                     var soup = decision?.Ownership == PackageOwnership.Soup ? decision : null;
@@ -110,7 +113,7 @@ public sealed class ExcelReportWriter : IExcelReportWriter
                         decision?.IsPlatformMaxComplete, soup?.ICMax?.ToNormalizedString(), soup?.IsICMaxComplete,
                         stableCandidate?.ToNormalizedString(), candidateStatus,
                         soup?.NuGetCandidate?.Source, soup?.NuGetCandidate?.QueriedAt, soup?.NuGetCandidate?.Detail,
-                        target?.ToNormalizedString(), selectedTarget?.Source.ToString() ?? (target is null ? "" : "PlatformMax"),
+                        target?.ToNormalizedString(), selectedTarget?.Source.ToString() ?? (target is null ? "" : decision?.PlatformTargetSource.ToString()),
                         !selected ? "Not selected" : selection?.ReviewPlan?.Status == ChangePlanStatus.PreviewOnly || !analysis.CanUpdate
                             ? "Preview only / Not approved" : selection?.ReviewPlan?.CanExecute == true ? "Approved" : "AwaitingApproval", action,
                         soup is null ? AlignmentAction.NotApplicable : CandidateAction(usage, soup.ICMax),
@@ -119,7 +122,10 @@ public sealed class ExcelReportWriter : IExcelReportWriter
                         provenance.ReferenceOwner.ElementPath, provenance.VersionOwner.SourceFile, provenance.VersionOwner.ElementPath,
                         provenance.Kind, provenance.PropertyName, provenance.CentralFile, provenance.IsUniquelyOwned,
                         inventory.Source.RefKind, inventory.Source.Ref, inventory.Snapshot?.Commit, inventory.Snapshot?.CapturedAt,
-                        analysis.ScannedAt, analysis.Id, analysis.ManifestVersion, analysis.ManifestHash, inventory.Status]);
+                        analysis.ScannedAt, analysis.Id, analysis.ManifestVersion, analysis.ManifestHash, inventory.Status,
+                        decision?.PlatformPackage?.Source.Name, decision?.PlatformPackage?.Source.RefKind,
+                        decision?.PlatformPackage?.Source.Ref, decision?.PlatformPackage?.Version?.ToNormalizedString(),
+                        decision?.PlatformPackage?.UnavailableReason]);
                     if (isMaximum) sheet.Cell(row, 10).Style.Fill.BackgroundColor = XLColor.LightGreen;
                     if (decision?.Ownership == PackageOwnership.Soup) sheet.Cell(row, 5).Style.Fill.BackgroundColor = XLColor.LightYellow;
                     if (decision?.Ownership == PackageOwnership.SharedWithPlatform) sheet.Cell(row, 5).Style.Fill.BackgroundColor = XLColor.LightCyan;

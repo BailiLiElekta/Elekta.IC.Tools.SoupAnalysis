@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "2",
+  "version": "3",
   "analysisFor": "IC Berlin Release",
   "repositories": [
     { "id": "elekta.platform.iam", "name": "elekta.platform.iam", "url": "https://elektasoftwarefactory.visualstudio.com/platform/_git/elekta.platform.iam", "category": "Platform", "refKind": "Tag", "ref": "33.7.0" },
@@ -11,5 +11,15 @@
     { "id": "elekta.platform.utility.polly", "name": "elekta.platform.utility.polly", "url": "https://elektasoftwarefactory.visualstudio.com/platform/_git/elekta.platform.utility.polly", "category": "Platform", "refKind": "Branch", "ref": "main" },
     { "id": "elekta.platform.identity", "name": "elekta.platform.identity", "url": "https://elektasoftwarefactory.visualstudio.com/platform/_git/elekta.platform.identity", "category": "Platform", "refKind": "Tag", "ref": "29.5.0" },
     { "id": "elekta.platform.utility.rest", "name": "elekta.platform.utility.rest", "url": "https://elektasoftwarefactory.visualstudio.com/platform/_git/elekta.platform.utility.rest", "category": "Platform", "refKind": "Branch", "ref": "main" }
+  ],
+  "packageMappings": [
+    { "repositoryId": "elekta.platform.iam", "packagePrefixes": ["Elekta.Platform.Iam"] },
+    { "repositoryId": "elekta.platform.minio", "packagePrefixes": ["Elekta.Platform.Minio"] },
+    { "repositoryId": "elekta.platform.dicom.common", "packagePrefixes": ["Elekta.Platform.Dicom.Common"] },
+    { "repositoryId": "elekta.platform.dicom.repository", "packagePrefixes": ["Elekta.Platform.Dicom.Repository"] },
+    { "repositoryId": "elekta.platform.system-information", "packagePrefixes": ["Elekta.Platform.SystemInformation"] },
+    { "repositoryId": "elekta.platform.utility.polly", "packagePrefixes": ["Elekta.Platform.Utility.Polly"] },
+    { "repositoryId": "elekta.platform.identity", "packagePrefixes": ["Elekta.Platform.Identity"] },
+    { "repositoryId": "elekta.platform.utility.rest", "packagePrefixes": ["Elekta.Platform.Utility.Rest"] }
   ]
 }

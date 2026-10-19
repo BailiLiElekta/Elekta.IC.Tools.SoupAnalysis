@@ -4,7 +4,7 @@
         <DataTemplate x:Key="ReadonlyTarget">
             <StackPanel VerticalAlignment="Center" ToolTip="{Binding TargetTooltip}" ToolTipService.ShowOnDisabled="True">
                 <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" ToolTip="Locked to PlatformMax">
+                <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Margin="0,0,6,0" ToolTip="{Binding TargetTooltip}">
                     <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
                         <DataTrigger Binding="{Binding SharedTag}" Value="Shared"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
                     </Style.Triggers></Style></TextBlock.Style>

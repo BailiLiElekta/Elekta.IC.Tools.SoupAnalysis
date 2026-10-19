@@ -78,6 +78,16 @@ public static class ConfigurationPolicy
             member.Category != RepositoryCategory.Platform || !platform.Any(source =>
                 source.Id.Equals(member.Id, StringComparison.OrdinalIgnoreCase) && source.Name == member.Name && source.Url == member.Url)))
             throw new ArgumentException("All and only manifest Platform members must be scanned; only refs may be overridden.", nameof(request));
+        if (request.Manifest.PackageMappings.IsDefault || request.Manifest.PackageMappings.Any(mapping =>
+            mapping is null || string.IsNullOrWhiteSpace(mapping.RepositoryId)
+            || !platform.Any(source => source.Id.Equals(mapping.RepositoryId, StringComparison.OrdinalIgnoreCase))
+            || mapping.PackagePrefixes.IsDefaultOrEmpty || mapping.PackagePrefixes.Any(prefix =>
+                string.IsNullOrWhiteSpace(prefix) || prefix.Split('.').Any(part => part.Length == 0
+                    || part.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '-' and not '_')))))
+            throw new ArgumentException("Package mappings require a manifest Platform repository and nonempty NuGet package prefixes.", nameof(request));
+        var prefixes = request.Manifest.PackageMappings.SelectMany(mapping => mapping.PackagePrefixes).ToArray();
+        if (prefixes.Distinct(StringComparer.OrdinalIgnoreCase).Count() != prefixes.Length)
+            throw new ArgumentException("Platform package prefixes must be unique, ignoring case.", nameof(request));
     }
 
     public static (string Name, string NormalizedUrl) ValidateRepositoryIdentity(RepositorySource source)

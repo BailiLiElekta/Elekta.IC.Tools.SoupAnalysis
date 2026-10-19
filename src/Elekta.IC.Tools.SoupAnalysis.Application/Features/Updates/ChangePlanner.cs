@@ -96,12 +96,12 @@ public sealed class ChangePlanner
             throw new ArgumentException("Only Custom targets may specify a custom version.");
         if (package.Ownership == PackageOwnership.SharedWithPlatform)
         {
-            if (source != TargetSource.PlatformMax)
-                throw new ArgumentException("Shared packages are locked to PlatformMax.");
-            return package.IsPlatformMaxComplete && package.PlatformMax is { } platform ? platform
-                : throw new InvalidOperationException("Platform baseline is incomplete.");
+            if (source != package.PlatformTargetSource)
+                throw new ArgumentException($"Platform packages are locked to {package.PlatformTargetSource}.");
+            return package.IsPlatformTargetComplete && package.PlatformTarget is { } platform ? platform
+                : throw new InvalidOperationException(package.PlatformPackage?.UnavailableReason ?? "Platform baseline is incomplete.");
         }
-        if (package.Ownership != PackageOwnership.Soup || source == TargetSource.PlatformMax)
+        if (package.Ownership != PackageOwnership.Soup || source is TargetSource.PlatformMax or TargetSource.PlatformTag)
             throw new ArgumentException("Only SOUP packages may choose ICMax or NuGetCandidate.");
         return source switch
         {

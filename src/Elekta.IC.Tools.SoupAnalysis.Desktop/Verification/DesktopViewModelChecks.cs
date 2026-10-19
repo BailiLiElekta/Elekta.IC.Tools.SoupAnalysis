@@ -32,7 +32,11 @@ internal static class DesktopViewModelChecks
             Check(production.GetRequiredService<MainViewModel>() is not null,
                 "Production service graph resolves without login or remote calls");
         }
-        Check(startup.IsInitialized && startup.Repositories.Count == 11, "Real 11-member Platform manifest excludes the IC bridge");
+        var configuration = await configurationService.LoadAsync(CancellationToken.None);
+        Check(startup.IsInitialized && startup.Repositories.Count == configuration.Manifest.Repositories.Length
+            && startup.Repositories.Select(row => row.Source.Id).SequenceEqual(configuration.Manifest.Repositories.Select(source => source.Id))
+            && startup.Repositories.All(row => row.Name != "workflow-management-task-management-bridge"),
+            "Loaded Platform membership matches the manifest and excludes the IC bridge");
         Check(startup.Repositories.All(row => !row.CanDelete && row.AllowedRefKinds.Length == 3), "Platform membership locked, branch/tag/commit editable");
         Check(!startup.ScanCommand.CanExecute(null) && !startup.ExecuteCommand.CanExecute(null) && !startup.LoginCommand.CanExecute(null), "Smoke mode prohibits remote operations");
         var parsed = MainViewModel.ParseRepository("https://dev.azure.com/org/project/_git/elekta.ic.emulator.fixture", "main", RepositoryCategory.IC);
@@ -42,7 +46,6 @@ internal static class DesktopViewModelChecks
         Check(Rejects(() => MainViewModel.ParseRepository("https://user:secret@dev.azure.com/org/project/_git/unknown", "main", RepositoryCategory.IC)), "Credential-bearing URLs rejected");
         Check(Rejects(() => MainViewModel.ParseRepository("https://dev.azure.com/org/project/_git/unknown", "topic[1]", RepositoryCategory.IC)), "Invalid Git branch syntax rejected before acquisition");
         Check(Rejects(() => MainViewModel.ParseRepository("https://dev.azure.com/org/project/_git/unknown%2frepo", "main", RepositoryCategory.IC)), "Ambiguous encoded repository path rejected");
-        var configuration = await configurationService.LoadAsync(CancellationToken.None);
         var fixture = SmokeFixture.Create(configuration);
         var settings = UserSettings.Default with { Repositories = [.. fixture.OriginalRefs.Where(source => source.Category != RepositoryCategory.Platform)] };
         var ports = new TestPorts(configuration, settings);
